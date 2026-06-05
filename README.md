@@ -37,7 +37,7 @@ It is recommended to check the printer status before sending a print job.
   {
     "type": "qr",
     "content": "https://github.com/katurov/s85-webprint",
-    "size": 8
+    "size": 6
   },
   {
     "type": "barcode",
@@ -50,7 +50,7 @@ It is recommended to check the printer status before sending a print job.
 - **text**: Prints plain text. Supports CP866 encoding. Only printable characters and newlines allowed.
 - **qr**: Generates a QR code.
     - `content`: Any valid string or URL.
-    - `size` (optional): Module size from 1 to 16 (default is 6).
+    - `size` (optional): Module size from 1 to 16. **Recommended: 6** for URLs, **8-10** for short IDs.
 - **barcode**:
     - Automatic detection: If content consists of 12-13 digits, it prints an **EAN13** barcode.
     - Fallback: Otherwise, it prints a **CODE128** barcode (supports alphanumeric characters).
@@ -65,7 +65,7 @@ The Markdown documentation is always available at GET /.
 ```bash
 curl -X POST -H "Content-Type: application/json" -d '[
     {"type": "text", "content": "Hello from Gemini!\n"},
-    {"type": "qr", "content": "https://github.com/katurov/s85-webprint", "size": 10},
+    {"type": "qr", "content": "https://github.com/katurov/s85-webprint", "size": 6},
     {"type": "barcode", "content": "S85DONE"}
 ]' http://192.168.42.53/print
 ```

@@ -29,17 +29,22 @@ Example Payload:
 ```json
 [
     {"type": "text", "content": "Hello!\n"},
-    {"type": "qr", "content": "https://github.com/katurov/s85-webprint", "size": 8},
+    {"type": "qr", "content": "https://github.com/katurov/s85-webprint", "size": 6},
     {"type": "barcode", "content": "123456789012"}
 ]
 ```
 
-## Validation Rules
-- text: Only printable characters and newlines allowed.
-- qr: Any valid UTF-8 string. "size" (optional) from 1 to 16.
-- barcode: 
-    - EAN13: 12-13 digits.
-    - CODE128: Alphanumeric characters (fallback).
+## Validation Rules & Guidance
+- **text**: Only printable characters and newlines allowed.
+- **qr**: Any valid UTF-8 string. 
+    - `size` (optional): Module size from 1 to 16.
+    - **Guidance for Agents**:
+        - Use `size: 6` for standard URLs (best balance).
+        - Use `size: 8-10` for short strings to improve readability.
+        - Use `size: 3-4` only for very long data strings to fit the 58mm tape.
+- **barcode**: 
+    - EAN13: Automatically used if content is 12-13 digits.
+    - CODE128: Fallback for alphanumeric strings.
 """
 
 def is_printable(s):
