@@ -58,7 +58,7 @@ class S85Printer:
                 size = job.get('size')
                 
                 if job_type == 'text':
-                    raw_data += content.encode('cp866', errors='replace')
+                    raw_data += content.encode('cp437', errors='replace')
                 elif job_type == 'qr':
                     raw_data += self._generate_qr(content, size)
                 elif job_type == 'barcode':

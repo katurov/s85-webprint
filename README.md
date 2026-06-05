@@ -20,7 +20,7 @@ The service runs on **port 80**.
 It is recommended to check the printer status before sending a print job.
 - **URL:** GET /status
 - **Success (200 OK):** `{"status": "ready", "message": "Ready"}`
-- **Error (503 Service Unavailable):** Returned if the printer is off, out of paper, or the cover is open. Details are in the `message` field.
+- **Error (503 Service Unavailable):** Returned if the printer is off, out of paper, or the cover is open.
 
 ### 2. Printing
 - **URL:** POST /print
@@ -47,13 +47,15 @@ It is recommended to check the printer status before sending a print job.
 ```
 
 #### Commands & Options:
-- **text**: Prints plain text. Supports CP866 encoding. Only printable characters and newlines allowed.
+- **text**: Prints plain text.
+    - **Note on Characters**: ASCII and **Pseudo-graphics (box drawing)** are supported. 
+    - **Cyrillic is NOT supported** (it will be replaced by diacritics/symbols).
 - **qr**: Generates a QR code.
     - `content`: Any valid string or URL.
-    - `size` (optional): Module size from 1 to 16. **Recommended: 6** for URLs, **8-10** for short IDs.
+    - `size` (optional): Module size from 1 to 16. **Recommended: 6** for URLs.
 - **barcode**:
     - Automatic detection: If content consists of 12-13 digits, it prints an **EAN13** barcode.
-    - Fallback: Otherwise, it prints a **CODE128** barcode (supports alphanumeric characters).
+    - Fallback: Otherwise, it prints a **CODE128** barcode.
 
 #### Constraints:
 - **Length:** The total length of all content in a single request must not exceed 512 characters.
@@ -64,8 +66,7 @@ The Markdown documentation is always available at GET /.
 ### 4. Example usage (curl)
 ```bash
 curl -X POST -H "Content-Type: application/json" -d '[
-    {"type": "text", "content": "Hello from Gemini!\n"},
-    {"type": "qr", "content": "https://github.com/katurov/s85-webprint", "size": 6},
-    {"type": "barcode", "content": "S85DONE"}
+    {"type": "text", "content": "Test print\n"},
+    {"type": "qr", "content": "https://github.com/katurov/s85-webprint", "size": 6}
 ]' http://192.168.42.53/print
 ```

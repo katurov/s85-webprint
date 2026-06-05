@@ -22,9 +22,12 @@ Returns the current status of the printer.
 
 ### POST /print
 Prints a job. The body should be a JSON list of commands.
-- Max total content length: 512 characters.
-- Types: text, qr, barcode.
 
+## Character Support
+- **Supported**: ASCII, Pseudo-graphics (box drawing).
+- **NOT Supported**: Cyrillic (will appear as math symbols/diacritics).
+
+## Print Job Format
 Example Payload:
 ```json
 [
@@ -34,22 +37,18 @@ Example Payload:
 ]
 ```
 
-## Validation Rules & Guidance
-- **text**: Only printable characters and newlines allowed.
-- **qr**: Any valid UTF-8 string. 
-    - `size` (optional): Module size from 1 to 16.
-    - **Guidance for Agents**:
-        - Use `size: 6` for standard URLs (best balance).
-        - Use `size: 8-10` for short strings to improve readability.
-        - Use `size: 3-4` only for very long data strings to fit the 58mm tape.
-- **barcode**: 
-    - EAN13: Automatically used if content is 12-13 digits.
-    - CODE128: Fallback for alphanumeric strings.
+## Validation Rules
+- **text**: ASCII and supported pseudo-graphics only.
+- **qr**: Any valid UTF-8 string. `size` (optional) from 1 to 16.
+- **barcode**: EAN13 (12-13 digits) or CODE128.
 """
 
-def is_printable(s):
-    printable = set(string.printable)
-    return all(c in printable for c in s)
+def is_valid_content(s):
+    try:
+        s.encode('cp437')
+        return True
+    except UnicodeEncodeError:
+        return False
 
 @app.route('/')
 def index():
@@ -82,11 +81,11 @@ def print_job():
             return jsonify({"status": "error", "message": "Total content length exceeds 512 characters"}), 400
             
         if cmd_type == 'text':
-            if not is_printable(content):
-                return jsonify({"status": "error", "message": f"Invalid characters in text: {content}"}), 400
+            if not is_valid_content(content):
+                return jsonify({"status": "error", "message": "Unsupported characters in text"}), 400
         elif cmd_type == 'barcode':
-            if not is_printable(content):
-                return jsonify({"status": "error", "message": f"Invalid characters in barcode: {content}"}), 400
+            if not is_valid_content(content):
+                return jsonify({"status": "error", "message": "Invalid characters in barcode"}), 400
         elif cmd_type == 'qr':
             pass
         else:
