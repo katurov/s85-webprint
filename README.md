@@ -1,12 +1,52 @@
 # S85 Web Print Service
 
-A Flask-based web service for printing to the S85 Bluetooth thermal printer.
+## Описание проекта
+Этот проект создан исключительно в развлекательных целях для управления Bluetooth-термопринтером S85. Он предоставляет простой веб-интерфейс (API), который позволяет отправлять на печать текст, QR-коды и штрихкоды. Сервис спроектирован так, чтобы им было удобно пользоваться как человеку, так и ИИ-агентам.
 
-## Installation
-The service is designed to run on a Raspberry Pi Zero 2 W.
-It uses a systemd service for auto-start.
+## Аппаратное и программное обеспечение
+- **Железо:** Raspberry Pi Zero 2 W
+- **ОС:** Debian 13 (Trixie)
+- **Язык:** Python 3 (Flask)
+- **Связь с принтером:** Bluetooth RFCOMM (через нативные сокеты Python)
 
-## Files
-- `app.py`: Flask API
-- `printer_logic.py`: Bluetooth and ESC/POS logic
-- `s85-webprint.service`: Systemd service file
+## Порт
+Сервис работает на **порту 80**.
+
+---
+
+## Инструкция для Агента (и Человека)
+
+### 1. Проверка статуса
+Перед отправкой задания рекомендуется проверить, готов ли принтер.
+- **URL:** GET /status
+- **Успешный ответ (200 OK):** {"status": "ready", "message": "Ready"}
+- **Ошибка (503 Service Unavailable):** Возвращается, если принтер выключен, закончилась бумага или открыта крышка. Детали в поле message.
+
+### 2. Печать
+- **URL:** POST /print
+- **Заголовок:** Content-Type: application/json
+- **Тело запроса:** Список объектов (команд).
+
+#### Формат данных:
+[
+  {
+    "type": "text",
+    "content": "Привет! Это текст.\n"
+  },
+  {
+    "type": "qr",
+    "content": "https://github.com/katurov/s85-webprint"
+  },
+  {
+    "type": "barcode",
+    "content": "S8512345"
+  }
+]
+
+#### Ограничения:
+- **Длина:** Суммарный контент всех команд не должен превышать 512 символов.
+- **Символы текста:** Разрешены только печатные символы и переносы строк.
+- **Штрихкод:** Поддерживается CODE128 (только латиница и цифры).
+
+### 3. Документация
+Сама Markdown-инструкция всегда доступна по адресу GET /.
