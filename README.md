@@ -50,3 +50,12 @@
 
 ### 3. Документация
 Сама Markdown-инструкция всегда доступна по адресу GET /.
+
+### Пример
+```bash
+curl -X POST -H "Content-Type: application/json" -d '[
+  {"type": "text", "content": "Hello from Gemini!\n"},
+  {"type": "qr", "content": "https://github.com/katurov/s85-webprint"},
+  {"type": "barcode", "content": "S85DONE"}
+  ]' http://192.168.42.53/print
+```
