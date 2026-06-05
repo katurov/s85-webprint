@@ -28,13 +28,12 @@ class S85Printer:
             time.sleep(0.2)
             response = s.recv(10)
             s.close()
-            time.sleep(0.5) # Allow BT stack to settle
+            time.sleep(0.5)
             
             if not response:
                 return False, "No response from printer"
             
             status_msg = []
-            # Check bits (ESC/POS standard)
             if len(response) >= 1:
                 if response[0] & 0x08: status_msg.append("Offline")
             if len(response) >= 2:
@@ -53,11 +52,15 @@ class S85Printer:
     def print_job(self, jobs):
         try:
             raw_data = b'\x1b\x40' # Init
-            for job_type, content in jobs:
+            for job in jobs:
+                job_type = job.get('type')
+                content = job.get('content')
+                size = job.get('size')
+                
                 if job_type == 'text':
                     raw_data += content.encode('cp866', errors='replace')
                 elif job_type == 'qr':
-                    raw_data += self._generate_qr(content)
+                    raw_data += self._generate_qr(content, size)
                 elif job_type == 'barcode':
                     raw_data += self._generate_barcode(content)
             
@@ -71,18 +74,39 @@ class S85Printer:
         except Exception as e:
             return False, str(e)
 
-    def _generate_qr(self, content):
+    def _generate_qr(self, content, size=None):
+        # Default size to 6 if not specified or invalid
+        try:
+            sz = int(size) if size is not None else 6
+            if not (1 <= sz <= 16): sz = 6
+        except:
+            sz = 6
+
         data = content.encode('utf-8')
         pL = (len(data) + 3) % 256
         pH = (len(data) + 3) // 256
+        
+        # 1. QR model (2)
         res = b'\x1d\x28\x6b\x04\x00\x31\x41\x32\x00'
-        res += b'\x1d\x28\x6b\x03\x00\x31\x43\x03'
-        res += b'\x1d\x28\x6b\x03\x00\x31\x45\x30'
+        # 2. QR size (sz)
+        res += b'\x1d\x28\x6b\x03\x00\x31\x43' + bytes([sz])
+        # 3. Error correction (Level M = 49)
+        res += b'\x1d\x28\x6b\x03\x00\x31\x45\x31'
+        # 4. Store data
         res += b'\x1d\x28\x6b' + bytes([pL, pH]) + b'\x31\x50\x30' + data
+        # 5. Print QR
         res += b'\x1d\x28\x6b\x03\x00\x31\x51\x30'
         return res
 
     def _generate_barcode(self, content):
+        # Using m=2 for EAN13 if 12 or 13 digits, otherwise fallback to CODE128 (m=73)
         data = content.encode('ascii', errors='replace')
-        n = len(data)
-        return b'\x1d\x6b\x49' + bytes([n]) + data
+        if content.isdigit() and len(content) in [12, 13]:
+            # EAN13: GS k m d1...dk NUL (m=2)
+            # We strip to 12 if 13 provided, as printer usually calculates checksum
+            payload = content[:12].encode('ascii')
+            return b'\x1d\x6b\x02' + payload + b'\x00'
+        else:
+            # CODE128: GS k m n d1...dn (m=73/0x49)
+            n = len(data)
+            return b'\x1d\x6b\x49' + bytes([n]) + data

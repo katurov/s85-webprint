@@ -1,63 +1,71 @@
 # S85 Web Print Service
 
-## Описание проекта
-Этот проект создан исключительно в развлекательных целях для управления Bluetooth-термопринтером S85. Он предоставляет простой веб-интерфейс (API), который позволяет отправлять на печать текст, QR-коды и штрихкоды. Сервис спроектирован так, чтобы им было удобно пользоваться как человеку, так и ИИ-агентам.
+## Project Description
+This project was created purely for entertainment purposes to control an S85 Bluetooth thermal printer. It provides a simple web interface (API) that allows printing text, QR codes, and barcodes. The service is designed for easy consumption by both humans and AI agents.
 
-## Аппаратное и программное обеспечение
-- **Железо:** Raspberry Pi Zero 2 W
-- **ОС:** Debian 13 (Trixie)
-- **Язык:** Python 3 (Flask)
-- **Связь с принтером:** Bluetooth RFCOMM (через нативные сокеты Python)
+## Hardware & Software
+- **Hardware:** Raspberry Pi Zero 2 W
+- **OS:** Debian 13 (Trixie)
+- **Language:** Python 3 (Flask)
+- **Connectivity:** Bluetooth RFCOMM (via native Python sockets)
 
-## Порт
-Сервис работает на **порту 80**.
+## Port
+The service runs on **port 80**.
 
 ---
 
-## Инструкция для Агента (и Человека)
+## Instructions for Agents (and Humans)
 
-### 1. Проверка статуса
-Перед отправкой задания рекомендуется проверить, готов ли принтер.
+### 1. Check Status
+It is recommended to check the printer status before sending a print job.
 - **URL:** GET /status
-- **Успешный ответ (200 OK):** {"status": "ready", "message": "Ready"}
-- **Ошибка (503 Service Unavailable):** Возвращается, если принтер выключен, закончилась бумага или открыта крышка. Детали в поле message.
+- **Success (200 OK):** `{"status": "ready", "message": "Ready"}`
+- **Error (503 Service Unavailable):** Returned if the printer is off, out of paper, or the cover is open. Details are in the `message` field.
 
-### 2. Печать
+### 2. Printing
 - **URL:** POST /print
-- **Заголовок:** Content-Type: application/json
-- **Тело запроса:** Список объектов (команд).
+- **Header:** Content-Type: application/json
+- **Body:** A list of command objects.
 
-#### Формат данных:
-```JSON
+#### Data Format:
+```json
 [
   {
     "type": "text",
-    "content": "Привет! Это текст.\n"
+    "content": "Hello! This is text.\n"
   },
   {
     "type": "qr",
-    "content": "https://github.com/katurov/s85-webprint"
+    "content": "https://github.com/katurov/s85-webprint",
+    "size": 8
   },
   {
     "type": "barcode",
-    "content": "S8512345"
+    "content": "123456789012"
   }
 ]
 ```
 
-#### Ограничения:
-- **Длина:** Суммарный контент всех команд не должен превышать 512 символов.
-- **Символы текста:** Разрешены только печатные символы и переносы строк.
-- **Штрихкод:** Поддерживается CODE128 (только латиница и цифры).
+#### Commands & Options:
+- **text**: Prints plain text. Supports CP866 encoding. Only printable characters and newlines allowed.
+- **qr**: Generates a QR code.
+    - `content`: Any valid string or URL.
+    - `size` (optional): Module size from 1 to 16 (default is 6).
+- **barcode**:
+    - Automatic detection: If content consists of 12-13 digits, it prints an **EAN13** barcode.
+    - Fallback: Otherwise, it prints a **CODE128** barcode (supports alphanumeric characters).
 
-### 3. Документация
-Сама Markdown-инструкция всегда доступна по адресу GET /.
+#### Constraints:
+- **Length:** The total length of all content in a single request must not exceed 512 characters.
 
-### Пример
+### 3. Documentation
+The Markdown documentation is always available at GET /.
+
+### 4. Example usage (curl)
 ```bash
 curl -X POST -H "Content-Type: application/json" -d '[
-  {"type": "text", "content": "Hello from Gemini!\n"},
-  {"type": "qr", "content": "https://github.com/katurov/s85-webprint"},
-  {"type": "barcode", "content": "S85DONE"}
-  ]' http://192.168.42.53/print
+    {"type": "text", "content": "Hello from Gemini!\n"},
+    {"type": "qr", "content": "https://github.com/katurov/s85-webprint", "size": 10},
+    {"type": "barcode", "content": "S85DONE"}
+]' http://192.168.42.53/print
 ```

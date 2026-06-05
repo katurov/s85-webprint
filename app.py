@@ -26,16 +26,20 @@ Prints a job. The body should be a JSON list of commands.
 - Types: text, qr, barcode.
 
 Example Payload:
+```json
 [
     {"type": "text", "content": "Hello!\n"},
-    {"type": "qr", "content": "https://github.com/katurov/s85-webprint"},
-    {"type": "barcode", "content": "12345678"}
+    {"type": "qr", "content": "https://github.com/katurov/s85-webprint", "size": 8},
+    {"type": "barcode", "content": "123456789012"}
 ]
+```
 
 ## Validation Rules
 - text: Only printable characters and newlines allowed.
-- qr: Any valid UTF-8 string.
-- barcode: Alphanumeric characters (CODE128).
+- qr: Any valid UTF-8 string. "size" (optional) from 1 to 16.
+- barcode: 
+    - EAN13: 12-13 digits.
+    - CODE128: Alphanumeric characters (fallback).
 """
 
 def is_printable(s):
@@ -76,25 +80,22 @@ def print_job():
             if not is_printable(content):
                 return jsonify({"status": "error", "message": f"Invalid characters in text: {content}"}), 400
         elif cmd_type == 'barcode':
-            if not content.isalnum():
+            if not is_printable(content):
                 return jsonify({"status": "error", "message": f"Invalid characters in barcode: {content}"}), 400
         elif cmd_type == 'qr':
             pass
         else:
             return jsonify({"status": "error", "message": f"Unknown command type: {cmd_type}"}), 400
             
-        jobs.append((cmd_type, content))
+        jobs.append(item)
         
     if not jobs:
         return jsonify({"status": "error", "message": "No valid commands provided"}), 400
 
-    # We skip the status check here to avoid EBUSY race conditions.
-    # print_job itself will handle connection and report failure if unreachable.
     success, message = printer.print_job(jobs)
     if success:
         return jsonify({"status": "success", "message": "Job sent to printer"}), 200
     else:
-        # Map specific errors if needed, but 503 is generally correct for unreachable printer
         return jsonify({"status": "error", "message": message}), 503
 
 if __name__ == '__main__':
